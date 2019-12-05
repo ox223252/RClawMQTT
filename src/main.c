@@ -10,34 +10,7 @@
 #include "./lib/mosquittoInterface/mosquittoInterface.h"
 #include "./lib/rclaw/rclaw.h"
 
-// /
-// └── Roboclaw
-//     └── R2O / O2R
-//         └── set / get
-//             ├── Codeur
-//             │   ├── Left
-//             │   │   └── Value
-//             │   └── Right
-//             │       └── Value
-//             └── Motor
-//                 ├── Left
-//                 │   ├── Acc
-//                 │   ├── D
-//                 │   ├── I
-//                 │   ├── P
-//                 │   ├── QPPS
-//                 │   └── Speed
-//                 │       ├── order
-//                 │       └── value
-//                 └── Right
-//                     ├── Acc
-//                     ├── D
-//                     ├── I
-//                     ├── P
-//                     ├── QPPS
-//                     └── Speed
-//                         ├── order
-//                         └── value
+#include "parseCmdMQTT.h"
 
 typedef struct
 {
@@ -53,8 +26,116 @@ void onMsg ( char* topic, char* msg, void * arg )
 
 	printf ( "%s : %s\n", topic, msg );
 
+	switch ( getIdFrom( topic ) )
+	{
+
+		case ROBOCLAW_R2O_SET_CODEUR_M1_VALUE:
+		case ROBOCLAW_R2O_SET_CODEUR_M2_VALUE:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_ACC:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_D:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_I:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_P:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_QPPS:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_SPEED_ORDER:
+		case ROBOCLAW_R2O_SET_MOTOR_M1_SPEED_VALUE:
+		{
+			int8_t value = 0;
+			rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
+			mosquitto_publish ( robot->mosq, NULL, "/roboclaw/r2o/set/motor/m1/speed/value", 1, &value, 0, 0 );
+			break;
+		}
+		case ROBOCLAW_R2O_SET_MOTOR_M2_ACC:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_D:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_I:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_P:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_QPPS:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_SPEED_ORDER:
+		case ROBOCLAW_R2O_SET_MOTOR_M2_SPEED_VALUE:
+		{
+			int8_t value = 0;
+			rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
+			mosquitto_publish ( robot->mosq, NULL, "/roboclaw/r2o/set/motor/m2/speed/value", 1, &value, 0, 0 );
+			break;
+		}
+		case ROBOCLAW_O2R_SET_CODEUR_M1_VALUE:
+		case ROBOCLAW_O2R_SET_CODEUR_M2_VALUE:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_ACC:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_D:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_I:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_P:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_QPPS:
+		case ROBOCLAW_O2R_SET_MOTOR_M1_SPEED_ORDER:
+		{
+			int8_t value = atoi(msg);
+			rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
+			break;
+		}
+		case ROBOCLAW_O2R_SET_MOTOR_M1_SPEED_VALUE:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_ACC:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_D:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_I:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_P:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_QPPS:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_SPEED_ORDER:
+		case ROBOCLAW_O2R_SET_MOTOR_M2_SPEED_VALUE:
+		{
+			int8_t value = atoi(msg);
+			rclawReadWriteData ( robot->rclawFd, DRIVE_M2_WITH_SIGNED_SPEED, &value, NULL );
+			break;
+		}
+		case ROBOCLAW_R2O_GET_CODEUR_M1_VALUE:
+		case ROBOCLAW_R2O_GET_CODEUR_M2_VALUE:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_ACC:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_D:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_I:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_P:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_QPPS:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_SPEED_ORDER:
+		case ROBOCLAW_R2O_GET_MOTOR_M1_SPEED_VALUE:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_ACC:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_D:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_I:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_P:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_QPPS:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_SPEED_ORDER:
+		case ROBOCLAW_R2O_GET_MOTOR_M2_SPEED_VALUE:
+		case ROBOCLAW_O2R_GET_CODEUR_M1_VALUE:
+		case ROBOCLAW_O2R_GET_CODEUR_M2_VALUE:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_ACC:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_D:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_I:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_P:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_QPPS:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_SPEED_ORDER:
+		case ROBOCLAW_O2R_GET_MOTOR_M1_SPEED_VALUE:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_ACC:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_D:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_I:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_P:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_QPPS:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_SPEED_ORDER:
+		case ROBOCLAW_O2R_GET_MOTOR_M2_SPEED_VALUE:
+		{
+			break;
+		}
+		case ROBOCLAW_O2R_VERIFY_CMD_LENGTH:
+		{
+			uint32_t v = ROBOCLAW_O2R_VERIFY_CMD_LENGTH;
+			mosquitto_publish ( robot->mosq, NULL, "/roboclaw/r2o/verify/cmd/length", sizeof(v) , &v, 0, 0 );
+			break;
+		}
+		case 0:
+		default:
+		{
+			printf ( "%s : %s\n", topic, msg );
+			break;
+		}
+	}
+
 	if ( strcmp( token, "RClaw" ) == 0 )
 	{ // robotclaw
+
+
 		// IHM to RClow or RClaw to IHM mode
 		token = strtok(NULL, "/");
 		bool O2R = ( strcmp( token, "O2R" ) == 0 );
