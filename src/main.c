@@ -11,14 +11,6 @@
 #include "./lib/rclaw/rclaw.h"
 
 // /
-// ├── Dynamixel
-// │   ├── getIDs
-// │   └── [ID]
-// │       ├── changeID
-// │       ├── Appairage
-// │       └── set / get
-// │           ├── Value
-// │           └── Speed
 // └── Roboclaw
 //     └── R2O / O2R
 //         └── set / get
@@ -58,69 +50,10 @@ void onMsg ( char* topic, char* msg, void * arg )
 	robotDescriptor *robot = arg;
 
 	char *token = strtok( topic, "/");
-    
+
 	printf ( "%s : %s\n", topic, msg );
 
-	if ( strcmp( token, "Dyna" ) == 0 )
-	{ // dynamixels
-		
-		// int value = 0;
-		// token = strtok(NULL, "/");
-		// if ( strcmp( token, "getIDs" ) == 0 )
-		// {
-
-		// }
-		// else if ( value = atoi( token ), value || 
-		// 	( token[ 0 ] == 0 ) )
-		// {
-		// 	bool set = false;
-
-		// 	if ( strcmp( token, "Appairage" ) == 0 )
-		// 	{
-		// 		// TODO
-		// 		return;
-		// 	}
-		// 	else if ( strcmp( token, "changeID" ) == 0 )
-		// 	{
-		// 		// TODO
-		// 		return;
-		// 	}
-		// 	else if ( strcmp( token, "set" ) == 0 )
-		// 	{
-		// 		set = true;
-		// 	}
-		// 	else if ( strcmp( token, "get" ) == 0 )
-		// 	{
-		// 		set = false;
-		// 	}
-		// 	else
-		// 	{
-		// 		printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
-		// 		return;
-		// 	}
-			
-		// 	token = strtok(NULL, "/");
-		// 	if ( strcmp( token, "Value" ) == 0 )
-		// 	{
-
-		// 	}
-		// 	else if ( strcmp( token, "Speed" ) == 0 )
-		// 	{
-				
-		// 	}
-		// 	else
-		// 	{
-		// 		printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
-		// 		return;
-		// 	}
-		// }
-		// else
-		// {
-		// 	printf ( "unknow cmd : %s %s", topic, msg );
-		// 	return;
-		// }
-	}
-	else if ( strcmp( token, "RClaw" ) == 0 )
+	if ( strcmp( token, "RClaw" ) == 0 )
 	{ // robotclaw
 		// IHM to RClow or RClaw to IHM mode
 		token = strtok(NULL, "/");
@@ -321,8 +254,7 @@ int main ( int argc, char* argv[] )
 	
 	if ( flags.help )
 	{// configFile read successfully
-		printf ( "%s is a program to control and configure rclaw and dynamixels\n", argv[ 0 ] );
-		// printf ( "Build date: %s\n", DATE_BUILD );
+		printf ( "%s is a program to control and configure rclaw\n", argv[ 0 ] );
 		printf ( "Author: ox223252\n" );
 		printf ( "License: GPLv2\n" );
 		helpParamArgs ( param );
@@ -347,7 +279,7 @@ int main ( int argc, char* argv[] )
 		return ( __LINE__ );
 	}
 
-	if ( err= bigBoyMQTT_init ( mosq_init, &mosq, onMsg, &robot ), err )
+	if ( err = bigBoyMQTT_init ( mosq_init, &mosq, onMsg, &robot ), err )
 	{
 		perror ( "Mosquitto init" );
 		rt = __LINE__;
@@ -356,16 +288,11 @@ int main ( int argc, char* argv[] )
 
 	robot.mosq = mosq;
 
-	mosquitto_subscribe( mosq, NULL, "/Dyna/#", 0 );
 	mosquitto_subscribe( mosq, NULL, "/RClaw/O2R/#", 0 );
-
-	char data[] = "6";
-	mosquitto_publish( mosq, NULL, "/RClaw/R2O/set/Codeur/left", sizeof ( data ), data, 0, false );
-
-
 
 	while ( getchar() != '\n' )
 	{
+		printf ( "press enter to quit this soft\n" );
 	}
 
 	bigBoyMQTT_stop ( &mosq );
