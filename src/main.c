@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <stdint.h>
 #include "./lib/config/config_arg.h"
@@ -9,14 +10,52 @@
 #include "./lib/mosquittoInterface/mosquittoInterface.h"
 #include "./lib/rclaw/rclaw.h"
 
-struct
+// /
+// ├── Dynamixel
+// │   ├── getIDs
+// │   └── [ID]
+// │       ├── changeID
+// │       ├── Appairage
+// │       └── set / get
+// │           ├── Value
+// │           └── Speed
+// └── Roboclaw
+//     └── R2O / O2R
+//         └── set / get
+//             ├── Codeur
+//             │   ├── Left
+//             │   │   └── Value
+//             │   └── Right
+//             │       └── Value
+//             └── Motor
+//                 ├── Left
+//                 │   ├── Acc
+//                 │   ├── D
+//                 │   ├── I
+//                 │   ├── P
+//                 │   ├── QPPS
+//                 │   └── Speed
+//                 │       ├── order
+//                 │       └── value
+//                 └── Right
+//                     ├── Acc
+//                     ├── D
+//                     ├── I
+//                     ├── P
+//                     ├── QPPS
+//                     └── Speed
+//                         ├── order
+//                         └── value
+
+typedef struct
 {
 	int rclawFd;
+	struct mosquitto * mosq;
 }robotDescriptor;
 
 void onMsg ( char* topic, char* msg, void * arg )
 {
-	struct robotDescriptor *robot = arg;
+	robotDescriptor *robot = arg;
 
 	char *token = strtok( topic, "/");
     
@@ -25,61 +64,61 @@ void onMsg ( char* topic, char* msg, void * arg )
 	if ( strcmp( token, "Dyna" ) == 0 )
 	{ // dynamixels
 		
-		int value = 0;
-		token = strtok(NULL, "/");
-		if ( strcmp( token, "getIDs" ) == 0 )
-		{
+		// int value = 0;
+		// token = strtok(NULL, "/");
+		// if ( strcmp( token, "getIDs" ) == 0 )
+		// {
 
-		}
-		else if ( value = atoi( token ), value || 
-			( token[ 0 ] == 0 ) )
-		{
-			bool set = false;
+		// }
+		// else if ( value = atoi( token ), value || 
+		// 	( token[ 0 ] == 0 ) )
+		// {
+		// 	bool set = false;
 
-			if ( strcmp( token, "Appairage" ) == 0 )
-			{
-				// TODO
-				return;
-			}
-			else if ( strcmp( token, "changeID" ) == 0 )
-			{
-				// TODO
-				return;
-			}
-			else if ( strcmp( token, "set" ) == 0 )
-			{
-				set = true;
-			}
-			else if ( strcmp( token, "get" ) == 0 )
-			{
-				set = false;
-			}
-			else
-			{
-				printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
-				return;
-			}
+		// 	if ( strcmp( token, "Appairage" ) == 0 )
+		// 	{
+		// 		// TODO
+		// 		return;
+		// 	}
+		// 	else if ( strcmp( token, "changeID" ) == 0 )
+		// 	{
+		// 		// TODO
+		// 		return;
+		// 	}
+		// 	else if ( strcmp( token, "set" ) == 0 )
+		// 	{
+		// 		set = true;
+		// 	}
+		// 	else if ( strcmp( token, "get" ) == 0 )
+		// 	{
+		// 		set = false;
+		// 	}
+		// 	else
+		// 	{
+		// 		printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
+		// 		return;
+		// 	}
 			
-			token = strtok(NULL, "/");
-			if ( strcmp( token, "Value" ) == 0 )
-			{
+		// 	token = strtok(NULL, "/");
+		// 	if ( strcmp( token, "Value" ) == 0 )
+		// 	{
 
-			}
-			else if ( strcmp( token, "Speed" ) == 0 )
-			{
+		// 	}
+		// 	else if ( strcmp( token, "Speed" ) == 0 )
+		// 	{
 				
-			}
-			else
-			{
-				printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
-				return;
-			}
-		}
-		else
-		{
-			printf ( "unknow cmd : %s %s", topic, msg );
-			return;
-		}
+		// 	}
+		// 	else
+		// 	{
+		// 		printf ( "MOSQUITTO unknow cmd : %s %s \n", token, msg );
+		// 		return;
+		// 	}
+		// }
+		// else
+		// {
+		// 	printf ( "unknow cmd : %s %s", topic, msg );
+		// 	return;
+		// }
 	}
 	else if ( strcmp( token, "RClaw" ) == 0 )
 	{ // robotclaw
@@ -152,17 +191,19 @@ void onMsg ( char* topic, char* msg, void * arg )
 					if ( set )
 					{
 						token = strtok(NULL, "/");
-						int8_t value = atoi( token );
-						rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
-					}
-					else
-					{
+						int8_t value = atoi(token);
 						rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
 					}
 				}
 				else if ( strcmp ( token, "value" ) == 0 )
 				{
-
+					if ( !set )
+					{
+						token = strtok(NULL, "/");
+						int8_t value = 0;
+						rclawReadWriteData ( robot->rclawFd, DRIVE_M1_WITH_SIGNED_SPEED, &value, NULL );
+						mosquitto_publish ( robot->mosq, NULL, "/Roboclaw/R2O/set/Motor/Speed/value", 1, &value, 0, 0 );
+					}
 				}
 				else
 				{
@@ -192,9 +233,6 @@ int main ( int argc, char* argv[] )
 	int err = 0;
 	int rt = 0;
 
-	uint8_t rcAddr = 0x80;
-
-	robotDescriptor robot;
 
 	struct
 	{
@@ -216,10 +254,11 @@ int main ( int argc, char* argv[] )
 	const char name[] = "robot";
 	const char host[] = "127.0.0.1";
 	const char lastName[] = "status";
-	const char lastMsg[] = "diconnected";
-	char rclawPath[64] = "/dev/ttyACM0"
+	const char lastMsg[] = "disconnected";
+	char rclawPath[64] = "/dev/ttyACM0";
 
 	struct mosquitto * mosq;
+	#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
 	MQTT_init_t mosq_init = {
 		.name = name,
 		.host = host,
@@ -230,6 +269,7 @@ int main ( int argc, char* argv[] )
 		.lastName = lastName,
 		.lastMsg = lastMsg
 	};
+	#pragma GCC diagnostic pop
 
 	config_el config[] =
 	{
@@ -300,6 +340,7 @@ int main ( int argc, char* argv[] )
 	logSetOutput ( flags.term | !flags.file, flags.file );
 	logSetFileName ( logFileName );
 
+	robotDescriptor robot;
 	robot.rclawFd = initLib ( rclawPath );
 	if ( robot.rclawFd )
 	{
@@ -312,6 +353,8 @@ int main ( int argc, char* argv[] )
 		rt = __LINE__;
 		goto rcError;
 	}
+
+	robot.mosq = mosq;
 
 	mosquitto_subscribe( mosq, NULL, "/Dyna/#", 0 );
 	mosquitto_subscribe( mosq, NULL, "/RClaw/O2R/#", 0 );
@@ -328,5 +371,5 @@ int main ( int argc, char* argv[] )
 	bigBoyMQTT_stop ( &mosq );
 rcError:
 	close ( robot.rclawFd );
-	return ( 0 );
+	return ( rt );
 }
